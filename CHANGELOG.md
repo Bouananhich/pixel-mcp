@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (fork additions)
+- **Asset pipeline tools** for composing scenes and exporting animated props to games (see `docs/PIPELINE.md`)
+  - `compose_from_manifest`: build a layered RGB `.aseprite` from a JSON manifest (`base`, `out`, `png?`, `layers[]` with `x`, `y`, optional nearest-neighbour `w`/`h`, `flipX`, `opacity`); relative paths resolve against the manifest folder; optional flattened PNG
+  - `set_layer_properties`: visibility, opacity, rename and blend mode (19 modes incl. normal/addition/screen/multiply)
+  - `animate_layer`: deterministic per-layer presets `flicker`, `pulse`, `bob`, `sway`, `cycle`; extends the sprite with copies of frame 1 (other layers keep their content), unlinks linked cels on the animated layer only, optional frame durations and tag
+  - `export_layers`: per-layer (`split`) or combined spritesheets of selected layers only, Aseprite json-hash with frame durations, `frameTags`, `layers`, plus `meta.offset`/`meta.spriteSize`; `trim` crops to the union of visible pixels across frames; the source file is never modified
+  - `run_lua`: raw Lua escape hatch, disabled unless `allowed_dirs` is configured
+- `allowed_dirs` config option (absolute directories; enables `run_lua` and extra output locations for pipeline tools)
+- Output path safety for the new tools: absolute paths inside the sprite/manifest folder or `allowed_dirs` only
+
+### Fixed
+- `draw_with_dither`: unknown pattern names were interpolated unescaped into the generated Lua error message (script injection); now escaped with `EscapeString`
+
 ## [0.5.0] - 2025-10-18
 
 ### Added

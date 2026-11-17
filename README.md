@@ -24,6 +24,7 @@ A Model Context Protocol (MCP) server that exposes Aseprite's pixel art and anim
 - **Animation Tools:** Frame durations, tags, frame duplication/deletion, linked cels
 - **Inspection Tools:** Read pixel data with pagination for verification and analysis
 - **Export Formats:** PNG, GIF, JPG, BMP, and spritesheet export (horizontal/vertical/grid layouts)
+- **Asset Pipeline (fork additions):** Compose layered scenes from a JSON manifest, animate single layers with deterministic presets (flicker, pulse, bob, sway, colour cycle), and export per-layer spritesheets with trim offsets for games — see [docs/PIPELINE.md](docs/PIPELINE.md)
 - **Cross-platform:** Windows, macOS, Linux
 - **MCP Integration:** Works with Claude Desktop and other MCP clients
 
@@ -56,7 +57,8 @@ Create `~/.config/pixel-mcp/config.json`:
   "timeout": 30,
   "log_level": "info",
   "log_file": "",
-  "enable_timing": false
+  "enable_timing": false,
+  "allowed_dirs": []
 }
 ```
 
@@ -67,6 +69,7 @@ Create `~/.config/pixel-mcp/config.json`:
 - `log_level` (optional): Logging verbosity (`debug`, `info`, `warn`, `error`). Defaults to `info`.
 - `log_file` (optional): Path to log file for persistent logging. If empty, logs only to stderr.
 - `enable_timing` (optional): Enable request tracking and operation timing. Defaults to `false`.
+- `allowed_dirs` (optional): Absolute directories that pipeline tools may write to in addition to the sprite's/manifest's own folder. Also enables the `run_lua` escape hatch (disabled while empty). Defaults to `[]`.
 
 ### 3. Run
 
@@ -179,6 +182,19 @@ Then use natural language to create sprites:
 | `export_spritesheet` | Export animation frames as spritesheet (horizontal/vertical/rows/columns/packed layout, optional JSON metadata) |
 | `import_image` | Import external image file as a layer in the sprite |
 | `save_as` | Save sprite to a new .aseprite file path |
+
+### Asset Pipeline (fork additions)
+See [docs/PIPELINE.md](docs/PIPELINE.md) for the compose → animate → export flow.
+
+| Tool | Description |
+|------|-------------|
+| `compose_from_manifest` | Build a layered .aseprite (base + one layer per prop, optional nearest-neighbour resize / flipX / opacity) and optional flattened PNG from a JSON manifest |
+| `set_layer_properties` | Change a layer's visibility, opacity, name and blend mode (normal, addition, screen, multiply, ...) |
+| `animate_layer` | Animate one layer with a deterministic preset: `flicker` (cel opacity), `pulse` (brightness), `bob`/`sway` (cel offset), `cycle` (colour cycling); extends frames, sets durations, creates a tag |
+| `export_layers` | Export only the listed layers as one combined sheet or one sheet per layer, with Aseprite json-hash (durations, frameTags) and trim offsets; never modifies the source |
+| `run_lua` | **Escape hatch**: run raw Aseprite Lua. Disabled unless `allowed_dirs` is configured; not sandboxed |
+
+**Path safety:** `export_layers` and `compose_from_manifest` only write to absolute paths inside the sprite's / manifest's folder (or an `allowed_dirs` entry). Existing tools are unchanged.
 
 ## Examples
 

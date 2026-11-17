@@ -698,7 +698,7 @@ local matrixSize = 4`
 		// Floyd-Steinberg uses error diffusion instead of matrix patterns
 		return generateFloydSteinbergLua(escapedLayerName, frameNumber, x, y, width, height, c1, c2, density)
 	default:
-		return fmt.Sprintf(`error("Unknown dithering pattern: %s")`, pattern)
+		return fmt.Sprintf(`error("Unknown dithering pattern: %s")`, EscapeString(pattern))
 	}
 
 	return fmt.Sprintf(`local spr = app.activeSprite
