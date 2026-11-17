@@ -347,3 +347,60 @@ func containsHelper(s, substr string) bool {
 	}
 	return false
 }
+
+func TestConfig_Validate_AllowedDirs(t *testing.T) {
+	testCfg, err := Load()
+	if err != nil {
+		t.Fatalf("Failed to load test config: %v", err)
+	}
+	base := Config{
+		AsepritePath: testCfg.AsepritePath,
+		TempDir:      t.TempDir(),
+		Timeout:      30 * time.Second,
+		LogLevel:     "info",
+	}
+
+	tests := []struct {
+		name    string
+		dirs    []string
+		wantErr bool
+		want    []string
+	}{
+		{name: "empty", dirs: nil},
+		{name: "absolute dirs are cleaned", dirs: []string{"/tmp/art/../art/"}, want: []string{"/tmp/art"}},
+		{name: "relative dir rejected", dirs: []string{"art"}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := base
+			cfg.AllowedDirs = append([]string(nil), tt.dirs...)
+			err := cfg.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.want != nil && (len(cfg.AllowedDirs) != len(tt.want) || cfg.AllowedDirs[0] != tt.want[0]) {
+				t.Errorf("AllowedDirs = %v, want %v", cfg.AllowedDirs, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfig_LoadFromFile_AllowedDirs(t *testing.T) {
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "config.json")
+	data := `{"aseprite_path": "/x/aseprite", "allowed_dirs": ["/a", "/b/c"]}`
+	if err := os.WriteFile(configPath, []byte(data), 0644); err != nil {
+		t.Fatal(err)
+	}
+	originalGetConfigFilePath := getConfigFilePath
+	getConfigFilePath = func() string { return configPath }
+	defer func() { getConfigFilePath = originalGetConfigFilePath }()
+
+	cfg := &Config{}
+	if err := cfg.loadFromFile(); err != nil {
+		t.Fatalf("loadFromFile() error = %v", err)
+	}
+	if len(cfg.AllowedDirs) != 2 || cfg.AllowedDirs[0] != "/a" || cfg.AllowedDirs[1] != "/b/c" {
+		t.Errorf("AllowedDirs = %v, want [/a /b/c]", cfg.AllowedDirs)
+	}
+}

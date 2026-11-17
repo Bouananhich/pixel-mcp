@@ -165,6 +165,9 @@ func (s *Server) registerTools() {
 
 	// Register antialiasing tools
 	tools.RegisterAntialiasingTools(s.mcp, s.client, s.gen, s.config, s.logger)
+
+	// Register asset-pipeline tools (layer properties, layer animation, layer export, manifest compose, run_lua)
+	tools.RegisterPipelineTools(s.mcp, s.client, s.gen, s.config, s.logger)
 }
 
 // Client returns the underlying Aseprite client for testing.

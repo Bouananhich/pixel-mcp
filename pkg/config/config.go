@@ -12,7 +12,8 @@
 //	  "timeout": 30,
 //	  "log_level": "info",
 //	  "log_file": "",
-//	  "enable_timing": false
+//	  "enable_timing": false,
+//	  "allowed_dirs": []
 //	}
 //
 // The aseprite_path field is required and must point to a real Aseprite executable.
@@ -63,6 +64,17 @@ type Config struct {
 	// When enabled, each operation gets a unique request ID and duration is logged.
 	// Defaults to false if not specified.
 	EnableTiming bool `json:"enable_timing"`
+
+	// AllowedDirs is an optional list of absolute directories.
+	//
+	// It is used by the pipeline tools in two ways:
+	//   - run_lua is disabled unless at least one directory is listed, and its
+	//     sprite_path must be inside one of them.
+	//   - export_layers / compose_from_manifest may write outputs inside these
+	//     directories in addition to the sprite's / manifest's own directory.
+	//
+	// Defaults to empty.
+	AllowedDirs []string `json:"allowed_dirs"`
 }
 
 // Default configuration values applied when fields are not specified in the config file.
@@ -114,12 +126,13 @@ func Load() (*Config, error) {
 
 // configJSON is a temporary struct for unmarshaling JSON with timeout as int (seconds)
 type configJSON struct {
-	AsepritePath string `json:"aseprite_path"`
-	TempDir      string `json:"temp_dir"`
-	Timeout      int    `json:"timeout"` // timeout in seconds
-	LogLevel     string `json:"log_level"`
-	LogFile      string `json:"log_file"`
-	EnableTiming bool   `json:"enable_timing"`
+	AsepritePath string   `json:"aseprite_path"`
+	TempDir      string   `json:"temp_dir"`
+	Timeout      int      `json:"timeout"` // timeout in seconds
+	LogLevel     string   `json:"log_level"`
+	LogFile      string   `json:"log_file"`
+	EnableTiming bool     `json:"enable_timing"`
+	AllowedDirs  []string `json:"allowed_dirs"`
 }
 
 // loadFromFile loads configuration from the default config file location.
@@ -144,6 +157,7 @@ func (c *Config) loadFromFile() error {
 	c.LogLevel = cj.LogLevel
 	c.LogFile = cj.LogFile
 	c.EnableTiming = cj.EnableTiming
+	c.AllowedDirs = cj.AllowedDirs
 
 	return nil
 }
@@ -214,6 +228,14 @@ func (c *Config) Validate() error {
 	// Validate timeout
 	if c.Timeout <= 0 {
 		return fmt.Errorf("timeout must be positive, got %v", c.Timeout)
+	}
+
+	// Validate allowed directories
+	for i, dir := range c.AllowedDirs {
+		if !filepath.IsAbs(dir) {
+			return fmt.Errorf("allowed_dirs entries must be absolute paths, got %q", dir)
+		}
+		c.AllowedDirs[i] = filepath.Clean(dir)
 	}
 
 	// Validate log level

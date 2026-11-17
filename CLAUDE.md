@@ -45,7 +45,8 @@ All operations require a configuration file at `~/.config/pixel-mcp/config.json`
   "timeout": 30,
   "log_level": "info",
   "log_file": "",
-  "enable_timing": false
+  "enable_timing": false,
+  "allowed_dirs": []
 }
 ```
 
@@ -56,6 +57,7 @@ Configuration fields:
 - `log_level` (optional): Verbosity level (`debug`, `info`, `warn`, `error`), defaults to `info`
 - `log_file` (optional): Path to persistent log file, empty means stderr only
 - `enable_timing` (optional): Enable request tracking/timing, defaults to `false`
+- `allowed_dirs` (optional): Absolute dirs pipeline tools may write to besides the sprite/manifest folder; enables `run_lua` (disabled when empty)
 
 The `aseprite_path` MUST be an absolute path to a real Aseprite executable. The project does NOT:
 - Auto-discover Aseprite installations
@@ -106,6 +108,7 @@ MCP Client → MCP Server (Go) → Lua Script Generation → Aseprite CLI (--bat
   - `palette_tools.go` - Palette management (set_palette, apply_shading, analyze_palette_harmonies)
   - `transform.go` - Transform operations (flip, rotate, scale, crop, resize canvas, outline, downsampling)
   - `export.go` - Export and import operations (export_sprite, export_spritesheet, import_image, save_as)
+  - `pipeline.go` - Asset pipeline (compose_from_manifest, set_layer_properties, animate_layer, export_layers, run_lua); Lua in `pkg/aseprite/lua_pipeline.go`, presets in `pkg/aseprite/animation_presets.go`, output path rules in `pathsafety.go`
 - `internal/testutil/` - Testing utilities (no mocks)
 
 ### Core Workflow
